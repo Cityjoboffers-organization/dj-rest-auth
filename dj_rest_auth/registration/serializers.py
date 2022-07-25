@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import HttpRequest
@@ -158,6 +159,11 @@ class SocialLoginSerializer(serializers.Serializer):
             # This needs to be handled in the frontend. We can not just
             # link up the accounts due to security constraints
             if allauth_settings.UNIQUE_EMAIL:
+                if getattr(settings, 'REST_CONNECT_EXISTING_ACCOUNTS', False):
+                    user = get_user_model().objects.filter(email=login.user.email)
+                    if user.exists():
+                        attrs['user'] = user.first()
+                        return attrs
                 # Do we have an account already with this email address?
                 account_exists = get_user_model().objects.filter(
                     email=login.user.email,
